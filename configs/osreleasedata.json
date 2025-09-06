@@ -1,0 +1,29 @@
+{
+  "osRelease": [
+    {
+      "label": "sm43",
+      "parent_channel": "sle-product-suse-manager-server-4.3-pool-x86_64",
+      "tree_path": "/usr/share/tftpboot-installation/SLE-15-SP4-x86_64"
+    },
+    {
+      "label": "mi52",
+      "parent_channel": "suse-microos-5.2-pool-x86_64",
+      "tree_path": "/usr/share/tftpboot-installation/SLE-Micro-5.2-x86_64"
+    },
+    {
+      "label": "mi53",
+      "parent_channel": "sle-micro-5.3-pool-x86_64",
+      "tree_path": "/usr/share/tftpboot-installation/SLE-Micro-5.3-x86_64"
+    },
+    {
+      "label": "s154",
+      "parent_channel": "sle-product-sles15-sp4-pool-x86_64",
+      "tree_path": "/usr/share/tftpboot-installation/SLE-15-SP4-x86_64"
+    },
+    {
+      "label": "s155",
+      "parent_channel": "sle-product-sles15-sp5-pool-x86_64",
+      "tree_path": "/usr/share/tftpboot-installation/SLE-15-SP5-x86_64"
+    }
+  ]
+}
