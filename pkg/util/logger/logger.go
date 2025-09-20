@@ -1,135 +1,133 @@
 package logger
 
 import (
-	"log"
+	"fmt"
+	"io"
 	"os"
-	"path/filepath"
-	"strconv"
 
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
-	"gopkg.in/natefinch/lumberjack.v2"
+	model "mlmtool/pkg/models/inputfile"
 
-	"mlmtool/pkg/config"
+	"github.com/sirupsen/logrus"
+	// "mlm-autoconfig/pkg/util/constants"
+	// ri "mlm-autoconfig/pkg/util/readconfig"
+	"strings"
+	"sync"
+	// "mlm-autoconfig/pkg/config" // Adjust import path
 )
 
-func getJSONEncoderConfig() zapcore.EncoderConfig {
-	return zapcore.EncoderConfig{
-		TimeKey:        "timestamp",
-		LevelKey:       "level",
-		MessageKey:     "msg",
-		CallerKey:      "caller",
-		EncodeTime:     zapcore.RFC3339TimeEncoder, // zapcore.ISO8601TimeEncoder
-		EncodeLevel:    zapcore.LowercaseLevelEncoder,
-		EncodeDuration: zapcore.SecondsDurationEncoder,
-		EncodeCaller:   zapcore.ShortCallerEncoder,
+// Logger is the application's central logger.
+var Logger *logrus.Logger
+var once sync.Once
+
+// InitLogger initializes the global logger based on the application configuration.
+func InitLogger(genConfig model.Config) error {
+	once.Do(func() {
+		Logger = logrus.New()
+		Logger.SetFormatter(&logrus.TextFormatter{
+			FullTimestamp: true,
+		})
+		// Configure screen output
+		screenLevel, err := logrus.ParseLevel(genConfig.LogLevel.Screen)
+		if err != nil {
+			fmt.Printf("Invalid screen log level '%s', defaulting to info: %v\n", genConfig.LogLevel.Screen, err)
+			screenLevel = logrus.InfoLevel
+		}
+		Logger.SetOutput(os.Stdout) // Default output to screen
+		Logger.SetLevel(screenLevel)
+		// Configure file output if a file path is provided
+		if genConfig.Dirs.LogDir != "" {
+			fileLevel, err := logrus.ParseLevel(genConfig.LogLevel.File)
+			if err != nil {
+				fmt.Printf("Invalid file log level '%s', defaulting to debug: %v\n", genConfig.LogLevel.File, err)
+				fileLevel = logrus.DebugLevel
+			}
+			logDir := ""
+			lastSlash := strings.LastIndex(genConfig.Dirs.LogDir, "/")
+			if lastSlash != -1 {
+				logDir = genConfig.Dirs.LogDir[:lastSlash]
+				if err := os.MkdirAll(logDir, 0755); err != nil {
+					fmt.Printf("Failed to create log directory '%s': %v\n", logDir, err)
+					return
+				}
+			}
+			logFile, err := os.OpenFile(genConfig.Dirs.LogDir, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+			if err != nil {
+				fmt.Printf("Failed to open log file '%s': %v\n", genConfig.Dirs.LogDir, err)
+				return
+			}
+			mw := io.MultiWriter(os.Stdout, logFile)
+			Logger.SetOutput(mw)
+			if fileLevel < screenLevel {
+				Logger.SetLevel(fileLevel)
+			} else {
+				Logger.SetLevel(screenLevel)
+			}
+		}
+	})
+	return nil
+}
+
+func Debug(args ...interface{}) {
+	if Logger.IsLevelEnabled(logrus.DebugLevel) {
+		Logger.Debug(args...)
 	}
 }
 
-func getConsoleEncoderConfig() zapcore.EncoderConfig {
-	return zapcore.EncoderConfig{
-		// Undefined or empty keys will be hidden from output
-		// TimeKey:        "T",
-		CallerKey:      "C",
-		LevelKey:       "L",
-		MessageKey:     "M",
-		EncodeTime:     zapcore.RFC3339TimeEncoder,
-		EncodeLevel:    zapcore.CapitalLevelEncoder,
-		EncodeDuration: zapcore.StringDurationEncoder,
-		EncodeCaller:   zapcore.ShortCallerEncoder,
+func Info(args ...interface{}) {
+	if Logger.IsLevelEnabled(logrus.InfoLevel) {
+		Logger.Info(args...)
 	}
 }
 
-func testLogFileCreation(cfg *config.Config) {
-
-	logDir := filepath.Dir(cfg.LogFile)
-	if err := os.MkdirAll(logDir, 0700); err != nil {
-		log.Fatalf("failed to create log directory: %v", err)
+func Warn(args ...interface{}) {
+	if Logger.IsLevelEnabled(logrus.WarnLevel) {
+		Logger.Warn(args...)
 	}
+}
 
-	// Attempt to open the logfile to ensure it can be created
-	file, err := os.OpenFile(cfg.LogFile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600)
-	if err != nil {
-		log.Fatalf("failed to create logfile: %v", err)
+func Error(args ...interface{}) {
+	if Logger.IsLevelEnabled(logrus.ErrorLevel) {
+		Logger.Error(args...)
 	}
-	defer file.Close() // Ensure the file handle is closed
-
 }
 
-func getJSONCore(cfg *config.Config) zapcore.Core {
-	// Severity
-	jsonLevel := zap.InfoLevel
-	if cfg.Debug {
-		jsonLevel = zapcore.DebugLevel
+func Fatal(args ...interface{}) {
+	Logger.Fatal(args...)
+}
+
+func Debugf(format string, args ...interface{}) {
+	if Logger.IsLevelEnabled(logrus.DebugLevel) {
+		Logger.Debugf(format, args...)
 	}
-
-	testLogFileCreation(cfg)
-	return zapcore.NewCore(
-		zapcore.NewJSONEncoder(getJSONEncoderConfig()),
-		// logfile output and rotation
-		zapcore.AddSync(&lumberjack.Logger{
-			Filename: cfg.LogFile,
-			MaxSize:  cfg.LogMaxSize,
-			MaxAge:   cfg.LogMaxAge,
-			Compress: cfg.LogCompression,
-		}),
-		jsonLevel,
-	)
 }
 
-func getConsoleCore(cfg *config.Config) zapcore.Core {
-	// Severity
-	consoleLevel := zap.InfoLevel
-	if cfg.Debug {
-		consoleLevel = zapcore.DebugLevel
+func Infof(format string, args ...interface{}) {
+	if Logger.IsLevelEnabled(logrus.InfoLevel) {
+		Logger.Infof(format, args...)
 	}
-
-	return zapcore.NewCore(
-		zapcore.NewConsoleEncoder(getConsoleEncoderConfig()),
-		zapcore.AddSync(os.Stdout), // Console output to stdout
-		consoleLevel,
-	)
 }
 
-func getLogger(cfg *config.Config, core zapcore.Core) *zap.Logger {
-	if debug {
-		cfg.Debug = true
+func Warnf(format string, args ...interface{}) {
+	if Logger.IsLevelEnabled(logrus.WarnLevel) {
+		Logger.Warnf(format, args...)
 	}
+}
 
-	// Create a logger with specific core
-	logger := zap.New(core)
-
-	if cfg.Debug {
-		// Ensure DPANIC levels do only panic in debug mode
-		logger = logger.WithOptions(zap.Development(), zap.AddCaller())
+func Errorf(format string, args ...interface{}) {
+	if Logger.IsLevelEnabled(logrus.ErrorLevel) {
+		Logger.Errorf(format, args...)
 	}
-
-	return logger
 }
 
-var debug bool
-
-func init() {
-	// add via environment variable enables debug log switch for tests
-	debug, _ = strconv.ParseBool(os.Getenv("DEBUG"))
+func Fatalf(format string, args ...interface{}) {
+	Logger.Fatalf(format, args...)
 }
 
-func New(cfg *config.Config) *zap.Logger {
-
-	// Combine cores
-	core := zapcore.NewTee(getJSONCore(cfg), getConsoleCore(cfg))
-
-	logger := getLogger(cfg, core)
-	return logger
-
-}
-
-func NewTestingLogger(name string) *zap.Logger {
-
-	cfg := config.New(name, debug)
-	// console output only: Does not need a defer logger.Sync() call
-	core := getConsoleCore(cfg)
-	logger := getLogger(cfg, core)
-	logger.Sugar().Debugf("Logger started: %s", cfg.Name)
-	return logger
-}
+// NOTE: For truly separate log levels for screen and file,
+// you would typically need to implement `logrus.Hook` for each output.
+// A simpler approach for the scope of this example is to set the
+// *global* log level of the Logrus instance to the most permissive
+// of the two (e.g., if screen is INFO and file is DEBUG, the global
+// level should be DEBUG). Then, within the hook or before writing
+// to the specific output, you would filter based on the desired level
+// for that output.

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	log "mlmtool/pkg/util/logger"
 	"strings"
 
 	"go.uber.org/zap"
@@ -23,7 +24,7 @@ func (p *Proxy) SumanLogin() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	p.logger.Info("Successfull login to suse manager", zap.Any("host", p.cfg.Host))
+	log.Debug("Successfull login to suse manager", zap.Any("host", p.cfg.Host))
 	return sumaCookie, nil
 }
 
@@ -35,14 +36,14 @@ func (p *Proxy) SumanLogin() (string, error) {
 func (p *Proxy) GetSessionKey(body []byte, host string) (string, error) {
 	response, err := p.suse.SuseManagerCall(body, "POST", host, "auth/login", "")
 	if err != nil {
-		p.logger.Error("error while login to suse manager", zap.Any("error", err))
+		log.Error("error while login to suse manager", zap.Any("error", err))
 		return "", errors.New("error while login to suse manager")
 	}
 	_, err = HandleSuseManagerResponse(response.Body)
 	if err != nil {
-		p.logger.Fatal("Unable to retrieve Cookie. Login problem", zap.Any("host", p.cfg.Host), zap.Any("Error", err))
+		log.Fatal("Unable to retrieve Cookie. Login problem", zap.Any("host", p.cfg.Host), zap.Any("Error", err))
 	} else {
-		p.logger.Info("succesfully retrieved Cookie.", zap.Any("host", p.cfg.Host))
+		log.Debug("succesfully retrieved Cookie.", zap.Any("host", p.cfg.Host))
 	}
 	Cookie := response.Cookies
 	sumaCookie := fmt.Sprint(Cookie[2])
@@ -56,9 +57,9 @@ func (p *Proxy) SumanLogout(auth AuthParams) error {
 	path := "auth/logout"
 	_, err := p.suse.SuseManagerCall(nil, "GET", auth.Host, path, auth.SessionKey)
 	if err != nil {
-		p.logger.Error("Unable to logout the request from suse manager", zap.Any("error", err))
+		log.Error("Unable to logout the request from suse manager", zap.Any("error", err))
 		return errors.New("error while logout suse manager")
 	}
-	p.logger.Info("Successfully logout from SUSE Manager Server", zap.Any("host", p.cfg.Host))
+	log.Debug("Successfully logout from SUSE Manager Server", zap.Any("host", p.cfg.Host))
 	return nil
 }

@@ -92,6 +92,9 @@ const (
 	// ErrSystemGroupNotFound error systemgroup not found
 	ErrSystemGroupNotFound = "error systemgroup not found"
 
+	// ErrConversionTime represents an error message indicating failure in time conversion operations.
+	ErrConversionTime = "error converting time"
+
 	/*
 	   Running scripts
 	*/

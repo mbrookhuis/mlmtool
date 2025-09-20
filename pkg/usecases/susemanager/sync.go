@@ -4,6 +4,7 @@ package susemanager
 import (
 	"encoding/json"
 	"fmt"
+	log "mlmtool/pkg/util/logger"
 
 	"go.uber.org/zap"
 
@@ -15,11 +16,11 @@ import (
 // param: sessionKey
 // return:
 func (p *Proxy) GetSlaves(sessionKey string) ([]sumamodels.Slaves, error) {
-	p.logger.Debug("GetSlaves call started")
+	log.Debug("GetSlaves call started")
 	path := "sync/slave/getSlaves"
 	response, err := p.suse.SuseManagerCall(nil, "GET", p.cfg.Host, path, sessionKey)
 	if err != nil {
-		p.logger.Error("error while fetching suse slaves", zap.Any("error", err))
+		log.Error("error while fetching suse slaves", zap.Any("error", err))
 		return nil, fmt.Errorf("error while fetching suse slaves: %s", err)
 	}
 	var resultSuc []sumamodels.Slaves
@@ -31,7 +32,7 @@ func (p *Proxy) GetSlaves(sessionKey string) ([]sumamodels.Slaves, error) {
 		byteArray, _ := json.Marshal(resp)
 		err = json.Unmarshal(byteArray, &resultSuc)
 		if err != nil {
-			p.logger.Error("unmarshling error", zap.Any("error", err))
+			log.Error("unmarshling error", zap.Any("error", err))
 			return nil, fmt.Errorf("unable to process the received data. err: %s", err)
 		}
 	}
@@ -44,13 +45,13 @@ func (p *Proxy) GetSlaves(sessionKey string) ([]sumamodels.Slaves, error) {
 // param: slaveFQDN
 // return:
 func (p *Proxy) SyncSlaveGetSlaveByName(auth AuthParams, slaveFQDN string) (sumamodels.Slaves, error) {
-	p.logger.Debug("GetSlaves call started")
+	log.Debug("GetSlaves call started")
 	var resultSuc sumamodels.Slaves
 	path := "sync/slave/getSlaveByName"
 	body, _ := json.Marshal(map[string]interface{}{"slaveFqdn": slaveFQDN})
 	response, err := p.suse.SuseManagerCall(body, "GET", auth.Host, path, auth.SessionKey)
 	if err != nil {
-		p.logger.Error("error while fetching suse slave ID", zap.Any("error", err))
+		log.Error("error while fetching suse slave ID", zap.Any("error", err))
 		return resultSuc, fmt.Errorf("error while fetching suse slave ID: %s", err)
 	}
 	if response.StatusCode == 200 {
@@ -61,7 +62,7 @@ func (p *Proxy) SyncSlaveGetSlaveByName(auth AuthParams, slaveFQDN string) (suma
 		byteArray, _ := json.Marshal(resp)
 		err = json.Unmarshal(byteArray, &resultSuc)
 		if err != nil {
-			p.logger.Error("unmarshling error", zap.Any("error", err))
+			log.Error("unmarshling error", zap.Any("error", err))
 			return resultSuc, fmt.Errorf("unable to process the received data. err: %s", err)
 		}
 		return resultSuc, nil
@@ -75,12 +76,12 @@ func (p *Proxy) SyncSlaveGetSlaveByName(auth AuthParams, slaveFQDN string) (suma
 // param: slaveID
 // return:
 func (p *Proxy) SyncSlaveDelete(auth AuthParams, slaveID int) (int, error) {
-	p.logger.Debug("GetSlaves call started")
+	log.Debug("GetSlaves call started")
 	body, _ := json.Marshal(map[string]interface{}{"slaveId": slaveID})
 	path := "sync/slave/delete"
 	response, err := p.suse.SuseManagerCall(body, "POST", auth.Host, path, auth.SessionKey)
 	if err != nil {
-		p.logger.Error("error while deleting SUSE Manager Slave entry", zap.Any("error", err))
+		log.Error("error while deleting SUSE Manager Slave entry", zap.Any("error", err))
 		return 0, fmt.Errorf("error while deleting SUSE Manager Slave entry. err: %s", err)
 	}
 	var resultSuc int
@@ -92,14 +93,14 @@ func (p *Proxy) SyncSlaveDelete(auth AuthParams, slaveID int) (int, error) {
 		byteArray, _ := json.Marshal(resp)
 		err = json.Unmarshal(byteArray, &resultSuc)
 		if err != nil {
-			p.logger.Error("unmarshling error", zap.Any("error", err))
+			log.Error("unmarshling error", zap.Any("error", err))
 			return 0, fmt.Errorf("unmarshalling error: %s", err)
 		}
 	} else {
-		p.logger.Error("error while deleting SUSE Manager Slave entry", zap.Any("StatusCode", response.StatusCode))
+		log.Error("error while deleting SUSE Manager Slave entry", zap.Any("StatusCode", response.StatusCode))
 		return 0, fmt.Errorf("deleting SUSE Manager Slave entry Failed. Http StatusCode: %s", fmt.Sprint(response.StatusCode))
 	}
-	p.logger.Debug("Response from api", zap.Any("api", "SyncSlaveDelete"), zap.Any("response", resultSuc))
+	log.Debug("Response from api", zap.Any("api", "SyncSlaveDelete"), zap.Any("response", resultSuc))
 	return resultSuc, nil
 }
 
@@ -111,13 +112,13 @@ func (p *Proxy) SyncSlaveDelete(auth AuthParams, slaveID int) (int, error) {
 // param: allowAllOrgs
 // return:
 func (p *Proxy) SyncSlaveCreate(auth AuthParams, slaveFQDN string, isEnabled bool, allowAllOrgs bool) (sumamodels.Slaves, error) {
-	p.logger.Debug("SyncSlaveCreate call started")
+	log.Debug("SyncSlaveCreate call started")
 	var resultSuc sumamodels.Slaves
 	path := "sync/slave/create"
 	body, _ := json.Marshal(map[string]interface{}{"slaveFqdn": slaveFQDN, "isEnabled": isEnabled, "allowAllOrgs": allowAllOrgs})
 	response, err := p.suse.SuseManagerCall(body, "POST", auth.Host, path, auth.SessionKey)
 	if err != nil {
-		p.logger.Error("error while creating suse slaves", zap.Any("error", err))
+		log.Error("error while creating suse slaves", zap.Any("error", err))
 		return resultSuc, fmt.Errorf("error while creating suse slaves: %s", err)
 	}
 	if response.StatusCode == 200 {
@@ -128,14 +129,14 @@ func (p *Proxy) SyncSlaveCreate(auth AuthParams, slaveFQDN string, isEnabled boo
 		byteArray, _ := json.Marshal(resp)
 		err = json.Unmarshal(byteArray, &resultSuc)
 		if err != nil {
-			p.logger.Error("unmarshling error", zap.Any("error", err))
+			log.Error("unmarshling error", zap.Any("error", err))
 			return resultSuc, fmt.Errorf("unable to process the received data. err: %s", err)
 		}
 	} else {
-		p.logger.Error("error while creating SUSE Manager Slave entry", zap.Any("StatusCode", response.StatusCode))
+		log.Error("error while creating SUSE Manager Slave entry", zap.Any("StatusCode", response.StatusCode))
 		return resultSuc, fmt.Errorf("creating SUSE Manager Slave entry Failed. Http StatusCode: %s", fmt.Sprint(response.StatusCode))
 	}
-	p.logger.Debug("Response from api", zap.Any("api", "SyncSlaveCreate"), zap.Any("response", resultSuc))
+	log.Debug("Response from api", zap.Any("api", "SyncSlaveCreate"), zap.Any("response", resultSuc))
 	return resultSuc, nil
 }
 
@@ -145,13 +146,13 @@ func (p *Proxy) SyncSlaveCreate(auth AuthParams, slaveFQDN string, isEnabled boo
 // param: label
 // return:
 func (p *Proxy) SyncMasterGetMasterByLabel(auth AuthParams, label string) (sumamodels.SlavesIssMaster, error) {
-	p.logger.Debug("SyncMasterGetMasterByLabel call started")
+	log.Debug("SyncMasterGetMasterByLabel call started")
 	var resultSuc sumamodels.SlavesIssMaster
 	path := "sync/master/getMasterByLabel"
 	body, _ := json.Marshal(map[string]interface{}{"label": label})
 	response, err := p.suse.SuseManagerCall(body, "GET", auth.Host, path, auth.SessionKey)
 	if err != nil {
-		p.logger.Error("error while fetching suse master ID", zap.Any("error", err))
+		log.Error("error while fetching suse master ID", zap.Any("error", err))
 		return resultSuc, fmt.Errorf("error while fetching suse slave ID: %s", err)
 	}
 	if response.StatusCode == 200 {
@@ -162,14 +163,14 @@ func (p *Proxy) SyncMasterGetMasterByLabel(auth AuthParams, label string) (sumam
 		byteArray, _ := json.Marshal(resp)
 		err = json.Unmarshal(byteArray, &resultSuc)
 		if err != nil {
-			p.logger.Error("unmarshling error", zap.Any("error", err))
+			log.Error("unmarshling error", zap.Any("error", err))
 			return resultSuc, fmt.Errorf("unable to process the received data. err: %s", err)
 		}
 	} else {
-		p.logger.Error("No master defined", zap.Any("StatusCode", response.StatusCode))
+		log.Error("No master defined", zap.Any("StatusCode", response.StatusCode))
 		return resultSuc, fmt.Errorf("no Master Defined. So no error")
 	}
-	p.logger.Debug("Response from api", zap.Any("api", "SyncMasterGetMasterByLabel"), zap.Any("response", resultSuc))
+	log.Debug("Response from api", zap.Any("api", "SyncMasterGetMasterByLabel"), zap.Any("response", resultSuc))
 	return resultSuc, nil
 }
 
@@ -179,12 +180,12 @@ func (p *Proxy) SyncMasterGetMasterByLabel(auth AuthParams, label string) (sumam
 // param: masterID
 // return:
 func (p *Proxy) SyncMasterDelete(auth AuthParams, masterID int) (int, error) {
-	p.logger.Debug("SyncMasterDelete call started")
+	log.Debug("SyncMasterDelete call started")
 	body, _ := json.Marshal(map[string]interface{}{"masterId": masterID})
 	path := "sync/master/delete"
 	response, err := p.suse.SuseManagerCall(body, "POST", auth.Host, path, auth.SessionKey)
 	if err != nil {
-		p.logger.Error("error while deleting SUSE Manager master entry", zap.Any("error", err))
+		log.Error("error while deleting SUSE Manager master entry", zap.Any("error", err))
 		return 0, fmt.Errorf("error while deleting SUSE Manager master entry. err: %s", err)
 	}
 	var resultSuc int
@@ -196,14 +197,14 @@ func (p *Proxy) SyncMasterDelete(auth AuthParams, masterID int) (int, error) {
 		byteArray, _ := json.Marshal(resp)
 		err = json.Unmarshal(byteArray, &resultSuc)
 		if err != nil {
-			p.logger.Error("unmarshling error", zap.Any("error", err))
+			log.Error("unmarshling error", zap.Any("error", err))
 			return 0, fmt.Errorf("unmarshalling error: %s", err)
 		}
 	} else {
-		p.logger.Debug("calling sync/master/delete Failed", zap.Any("StatusCode", response.StatusCode))
+		log.Debug("calling sync/master/delete Failed", zap.Any("StatusCode", response.StatusCode))
 		return 0, fmt.Errorf("calling sync/master/delete Failed. Http StatusCode: %s", fmt.Sprint(response.StatusCode))
 	}
-	p.logger.Debug("Response from api", zap.Any("api", "SyncSlaveMaster"), zap.Any("response", resultSuc))
+	log.Debug("Response from api", zap.Any("api", "SyncSlaveMaster"), zap.Any("response", resultSuc))
 	return resultSuc, nil
 }
 
@@ -213,13 +214,13 @@ func (p *Proxy) SyncMasterDelete(auth AuthParams, masterID int) (int, error) {
 // param: label
 // return:
 func (p *Proxy) SyncMasterCreate(auth AuthParams, label string) (sumamodels.SlavesIssMaster, error) {
-	p.logger.Debug("SyncMasterCreate call started")
+	log.Debug("SyncMasterCreate call started")
 	var resultSuc sumamodels.SlavesIssMaster
 	path := "sync/master/create"
 	body, _ := json.Marshal(map[string]interface{}{"label": label})
 	response, err := p.suse.SuseManagerCall(body, "POST", auth.Host, path, auth.SessionKey)
 	if err != nil {
-		p.logger.Error("error while create SUSE Manager master record", zap.Any("error", err))
+		log.Error("error while create SUSE Manager master record", zap.Any("error", err))
 		return resultSuc, fmt.Errorf("error while create SUSE Manager master record: %s", err)
 	}
 	if response.StatusCode == 200 {
@@ -230,14 +231,14 @@ func (p *Proxy) SyncMasterCreate(auth AuthParams, label string) (sumamodels.Slav
 		byteArray, _ := json.Marshal(resp)
 		err = json.Unmarshal(byteArray, &resultSuc)
 		if err != nil {
-			p.logger.Error("unmarshling error", zap.Any("error", err))
+			log.Error("unmarshling error", zap.Any("error", err))
 			return resultSuc, fmt.Errorf("unable to process the received data. err: %s", err)
 		}
 	} else {
-		p.logger.Debug("calling sync/master/create Failed", zap.Any("StatusCode", response.StatusCode))
+		log.Debug("calling sync/master/create Failed", zap.Any("StatusCode", response.StatusCode))
 		return resultSuc, fmt.Errorf("calling sync/master/create Failed. Http StatusCode: %s", fmt.Sprint(response.StatusCode))
 	}
-	p.logger.Debug("Response from api", zap.Any("api", "SyncMasterCreate"), zap.Any("response", resultSuc))
+	log.Debug("Response from api", zap.Any("api", "SyncMasterCreate"), zap.Any("response", resultSuc))
 	return resultSuc, nil
 }
 
@@ -247,12 +248,12 @@ func (p *Proxy) SyncMasterCreate(auth AuthParams, label string) (sumamodels.Slav
 // param: masterID
 // return:
 func (p *Proxy) SyncMasterMakeDefault(auth AuthParams, masterID int) (int, error) {
-	p.logger.Debug("SyncMasterMakeDefault call started")
+	log.Debug("SyncMasterMakeDefault call started")
 	body, _ := json.Marshal(map[string]interface{}{"masterId": masterID})
 	path := "sync/master/makeDefault"
 	response, err := p.suse.SuseManagerCall(body, "POST", auth.Host, path, auth.SessionKey)
 	if err != nil {
-		p.logger.Error("error while setting master SUSE Manager", zap.Any("error", err))
+		log.Error("error while setting master SUSE Manager", zap.Any("error", err))
 		return 0, fmt.Errorf("error while setting master SUSE Manager: %s", err)
 	}
 	var resultSuc int
@@ -264,14 +265,14 @@ func (p *Proxy) SyncMasterMakeDefault(auth AuthParams, masterID int) (int, error
 		byteArray, _ := json.Marshal(resp)
 		err = json.Unmarshal(byteArray, &resultSuc)
 		if err != nil {
-			p.logger.Error("unmarshling error", zap.Any("error", err))
+			log.Error("unmarshling error", zap.Any("error", err))
 			return 0, fmt.Errorf("unmarshalling error: %s", err)
 		}
 	} else {
-		p.logger.Debug("SyncMasterMakeDefault call Failed", zap.Any("StatusCode", response.StatusCode))
+		log.Debug("SyncMasterMakeDefault call Failed", zap.Any("StatusCode", response.StatusCode))
 		return 0, fmt.Errorf("calling SyncMasterMakeDefault Failed. Http StatusCode: %s", fmt.Sprint(response.StatusCode))
 	}
-	p.logger.Debug("Response from api", zap.Any("api", "SyncMasterMakeDefault"), zap.Any("response", resultSuc))
+	log.Debug("Response from api", zap.Any("api", "SyncMasterMakeDefault"), zap.Any("response", resultSuc))
 	return 1, nil
 }
 
@@ -282,12 +283,12 @@ func (p *Proxy) SyncMasterMakeDefault(auth AuthParams, masterID int) (int, error
 // param: caCert
 // return:
 func (p *Proxy) SyncMasterSetCaCert(auth AuthParams, masterID int, caCert string) (int, error) {
-	p.logger.Debug("SyncMasterSetCaCert call started")
+	log.Debug("SyncMasterSetCaCert call started")
 	body, _ := json.Marshal(map[string]interface{}{"masterId": masterID, "caCertFilename": caCert})
 	path := "sync/master/setCaCert"
 	response, err := p.suse.SuseManagerCall(body, "POST", auth.Host, path, auth.SessionKey)
 	if err != nil {
-		p.logger.Error("error while setting master SUSE Manager CaCert", zap.Any("error", err))
+		log.Error("error while setting master SUSE Manager CaCert", zap.Any("error", err))
 		return 0, fmt.Errorf("error while setting master SUSE Manager CaCert: %s", err)
 	}
 	var resultSuc int
@@ -299,13 +300,13 @@ func (p *Proxy) SyncMasterSetCaCert(auth AuthParams, masterID int, caCert string
 		byteArray, _ := json.Marshal(resp)
 		err = json.Unmarshal(byteArray, &resultSuc)
 		if err != nil {
-			p.logger.Error("unmarshling error", zap.Any("error", err))
+			log.Error("unmarshling error", zap.Any("error", err))
 			return 0, fmt.Errorf("unmarshalling error: %s", err)
 		}
 	} else {
-		p.logger.Debug("Setting CA Cert has failed. HTTP Statuscode not 200", zap.Any("StatusCode", response.StatusCode))
+		log.Debug("Setting CA Cert has failed. HTTP Statuscode not 200", zap.Any("StatusCode", response.StatusCode))
 		return 0, fmt.Errorf("setting CA Cert has failed. HTTP Statuscode: %s", fmt.Sprint(response.StatusCode))
 	}
-	p.logger.Debug("Response from api", zap.Any("api", "sync/master/setCaCert"), zap.Any("response", resultSuc))
+	log.Debug("Response from api", zap.Any("api", "sync/master/setCaCert"), zap.Any("response", resultSuc))
 	return resultSuc, nil
 }

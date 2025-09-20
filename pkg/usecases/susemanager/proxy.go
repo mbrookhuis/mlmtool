@@ -4,7 +4,7 @@ package susemanager
 import (
 	"fmt"
 
-	"go.uber.org/zap"
+	"mlmtool/pkg/util/logger"
 
 	"mlmtool/pkg/util/rest"
 )
@@ -13,7 +13,6 @@ import (
 type SuMaAPI struct {
 	basepath   string
 	insecure   bool
-	logger     *zap.Logger
 	susestub   bool
 	retrycount int
 }
@@ -26,11 +25,10 @@ type SuMaAPI struct {
 // param: retrycount
 // param: susestub
 // return:
-func NewSuseManagerAPI(basepath string, insecure bool, logger *zap.Logger, retrycount int, susestub ...bool) ISuseManagerAPI {
+func NewSuseManagerAPI(basepath string, insecure bool, retrycount int, susestub ...bool) ISuseManagerAPI {
 	var s = &SuMaAPI{
 		basepath:   basepath,
 		insecure:   insecure,
-		logger:     logger,
 		retrycount: retrycount,
 	}
 	// default suse stub to false
@@ -57,9 +55,9 @@ func (s *SuMaAPI) SuseManagerCall(body []byte, method string, hostname string, p
 		httproto = "http"
 	}
 	url := fmt.Sprintf("%s://%s/%s/%s", httproto, hostname, s.basepath, path)
-	response, err := rest.HTTPHelper(s.logger, s.retrycount, body, method, url, s.insecure, header)
+	response, err := rest.HTTPHelper(s.retrycount, body, method, url, s.insecure, header)
 	if err != nil {
-		s.logger.Error("Error message recieved", zap.Any("error", err))
+		logger.Error("Error message recieved: %w", err)
 		return nil, err
 	}
 	return response, nil

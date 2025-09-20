@@ -5,7 +5,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	_consts "mlmtool/pkg/util/consts"
+	_consts "mlmtool/pkg/util/constants"
 )
 
 var versionCmd = &cobra.Command{
@@ -13,7 +13,7 @@ var versionCmd = &cobra.Command{
 	Short: "display version of mlmtool",
 	Long:  `display version of mlmtool`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Printf("ECP-SUMA Version: %v\n", _consts.EcpSumaVersion)
+		fmt.Printf("mlmtool Version: %v\n", _consts.MlmToolVersion)
 	},
 }
 

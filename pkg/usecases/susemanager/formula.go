@@ -3,6 +3,7 @@ package susemanager
 
 import (
 	"encoding/json"
+	log "mlmtool/pkg/util/logger"
 	"net/http"
 
 	"github.com/pkg/errors"
@@ -21,7 +22,7 @@ func (p *Proxy) GetSystemFormulaData(auth AuthParams, sid int, formulaName strin
 	var resp interface{}
 	body, err := json.Marshal(map[string]any{"systemId": sid, "formulaName": formulaName})
 	if err != nil {
-		p.logger.Error(returnCodes.ErrFailedMarshalling, zap.Any("error", err))
+		log.Error(returnCodes.ErrFailedMarshalling, zap.Any("error", err))
 		return nil, errors.New(returnCodes.ErrFailedMarshalling)
 	}
 	path := "formula/getSystemFormulaData"
@@ -32,14 +33,14 @@ func (p *Proxy) GetSystemFormulaData(auth AuthParams, sid int, formulaName strin
 	if response.StatusCode == 200 {
 		resp, err = HandleSuseManagerResponse(response.Body)
 		if err != nil {
-			p.logger.Error(returnCodes.ErrHandlingSuseManagerResponse, zap.Any("response", resp), zap.Any("error", err))
+			log.Error(returnCodes.ErrHandlingSuseManagerResponse, zap.Any("response", resp), zap.Any("error", err))
 			return nil, errors.New(returnCodes.ErrHandlingSuseManagerResponse)
 		}
 	} else {
-		p.logger.Error(returnCodes.ErrHTTPSuseManagerResponse, zap.Any("HTTP Statuscode", response.StatusCode), zap.Any("HTTP body", response.Body))
+		log.Error(returnCodes.ErrHTTPSuseManagerResponse, zap.Any("HTTP Statuscode", response.StatusCode))
 		return nil, errors.New(returnCodes.ErrHTTPSuseManagerResponse)
 	}
-	p.logger.Debug("response from api", zap.Any("api", "GetSystemFormulaData"), zap.Any("response", resp))
+	log.Debug("response from api", zap.Any("api", "GetSystemFormulaData"), zap.Any("response", resp))
 	return resp, nil
 
 }
@@ -53,7 +54,7 @@ func (p *Proxy) GetSystemFormulaData(auth AuthParams, sid int, formulaName strin
 func (p *Proxy) GetGroupFormulaData(auth AuthParams, groupID int, formulaName string) (interface{}, error) {
 	body, err := json.Marshal(map[string]any{"groupId": groupID, "formulaName": formulaName})
 	if err != nil {
-		p.logger.Error(returnCodes.ErrFailedMarshalling, zap.Any("error", err))
+		log.Error(returnCodes.ErrFailedMarshalling, zap.Any("error", err))
 		return nil, errors.New(returnCodes.ErrFailedMarshalling)
 	}
 	path := "formula/getGroupFormulaData"
@@ -65,11 +66,11 @@ func (p *Proxy) GetGroupFormulaData(auth AuthParams, groupID int, formulaName st
 	if response.StatusCode == 200 {
 		resp, err = HandleSuseManagerResponse(response.Body)
 		if err != nil {
-			p.logger.Error(returnCodes.ErrHandlingSuseManagerResponse, zap.Any("response", resp), zap.Any("error", err))
+			log.Error(returnCodes.ErrHandlingSuseManagerResponse, zap.Any("response", resp), zap.Any("error", err))
 			return nil, errors.New(returnCodes.ErrHandlingSuseManagerResponse)
 		}
 	} else {
-		p.logger.Error(returnCodes.ErrHTTPSuseManagerResponse, zap.Any("HTTP Statuscode", response.StatusCode), zap.Any("HTTP body", response.Body))
+		log.Error(returnCodes.ErrHTTPSuseManagerResponse, zap.Any("HTTP Statuscode", response.StatusCode))
 		return nil, errors.New(returnCodes.ErrHTTPSuseManagerResponse)
 	}
 	return resp, nil
@@ -86,30 +87,30 @@ func (p *Proxy) GetGroupFormulaData(auth AuthParams, groupID int, formulaName st
 func (p *Proxy) SetSystemFormulaData(auth AuthParams, systemID int, formulaName string, formulaData interface{}) (int, error) {
 	body, err := json.Marshal(map[string]any{"systemId": systemID, "formulaName": formulaName, "content": formulaData})
 	if err != nil {
-		p.logger.Error(returnCodes.ErrFailedMarshalling, zap.Any("error", err))
+		log.Error(returnCodes.ErrFailedMarshalling, zap.Any("error", err))
 		return 0, errors.New(returnCodes.ErrFailedMarshalling)
 	}
 	path := "formula/setSystemFormulaData"
 	response, err := p.suse.SuseManagerCall(body, http.MethodPost, auth.Host, path, auth.SessionKey)
 	if err != nil {
-		p.logger.Error("Error message recieved from suse-manger", zap.Any("error", err))
+		log.Error("Error message recieved from suse-manger", zap.Any("error", err))
 		return 0, err
 	}
 	var result int
 	if response.StatusCode == 200 {
 		resp, err := HandleSuseManagerResponse(response.Body)
 		if err != nil {
-			p.logger.Error(returnCodes.ErrHandlingSuseManagerResponse, zap.Any("response", resp), zap.Any("error", err))
+			log.Error(returnCodes.ErrHandlingSuseManagerResponse, zap.Any("response", resp), zap.Any("error", err))
 			return 0, errors.New(returnCodes.ErrHandlingSuseManagerResponse)
 		}
 		byteArray, _ := json.Marshal(resp)
 		err = json.Unmarshal(byteArray, &result)
 		if err != nil {
-			p.logger.Error(returnCodes.ErrFailedUnMarshalling, zap.Any("error", err))
+			log.Error(returnCodes.ErrFailedUnMarshalling, zap.Any("error", err))
 			return 0, errors.New(returnCodes.ErrFailedUnMarshalling)
 		}
 	} else {
-		p.logger.Error(returnCodes.ErrHTTPSuseManagerResponse, zap.Any("HTTP Statuscode", response.StatusCode), zap.Any("HTTP body", response.Body))
+		log.Error(returnCodes.ErrHTTPSuseManagerResponse, zap.Any("HTTP Statuscode", response.StatusCode))
 		return 0, errors.New(returnCodes.ErrHandlingSuseManagerResponse)
 	}
 	return result, nil
@@ -125,7 +126,7 @@ func (p *Proxy) SetSystemFormulaData(auth AuthParams, systemID int, formulaName 
 func (p *Proxy) SetGroupFormulaData(auth AuthParams, groupID int, formulaName string, formulaData interface{}) (int, error) {
 	body, err := json.Marshal(map[string]interface{}{"groupId": groupID, "formulaName": formulaName, "content": formulaData})
 	if err != nil {
-		p.logger.Error(returnCodes.ErrFailedMarshalling, zap.Any("error", err))
+		log.Error(returnCodes.ErrFailedMarshalling, zap.Any("error", err))
 		return 0, errors.New(returnCodes.ErrFailedMarshalling)
 	}
 	path := "formula/setGroupFormulaData"
@@ -137,17 +138,17 @@ func (p *Proxy) SetGroupFormulaData(auth AuthParams, groupID int, formulaName st
 	if response.StatusCode == 200 {
 		resp, err := HandleSuseManagerResponse(response.Body)
 		if err != nil {
-			p.logger.Error(returnCodes.ErrHandlingSuseManagerResponse, zap.Any("response", resp), zap.Any("error", err))
+			log.Error(returnCodes.ErrHandlingSuseManagerResponse, zap.Any("response", resp), zap.Any("error", err))
 			return 0, errors.New(returnCodes.ErrHandlingSuseManagerResponse)
 		}
 		byteArray, _ := json.Marshal(resp)
 		err = json.Unmarshal(byteArray, &result)
 		if err != nil {
-			p.logger.Error(returnCodes.ErrFailedUnMarshalling, zap.Any("error", err))
+			log.Error(returnCodes.ErrFailedUnMarshalling, zap.Any("error", err))
 			return 0, errors.New(returnCodes.ErrFailedUnMarshalling)
 		}
 	} else {
-		p.logger.Error(returnCodes.ErrHTTPSuseManagerResponse, zap.Any("HTTP Statuscode", response.StatusCode), zap.Any("HTTP body", response.Body))
+		log.Error(returnCodes.ErrHTTPSuseManagerResponse, zap.Any("HTTP Statuscode", response.StatusCode))
 		return 0, errors.New(returnCodes.ErrHandlingSuseManagerResponse)
 	}
 	return result, nil
@@ -161,7 +162,7 @@ func (p *Proxy) SetGroupFormulaData(auth AuthParams, groupID int, formulaName st
 func (p *Proxy) GetFormulasByServerID(auth AuthParams, systemID int) ([]string, error) {
 	body, err := json.Marshal(map[string]interface{}{"sid": systemID})
 	if err != nil {
-		p.logger.Error(returnCodes.ErrFailedMarshalling, zap.Any("error", err))
+		log.Error(returnCodes.ErrFailedMarshalling, zap.Any("error", err))
 		return nil, errors.New(returnCodes.ErrFailedMarshalling)
 	}
 	path := "formula/getFormulasByServerId"
@@ -173,17 +174,17 @@ func (p *Proxy) GetFormulasByServerID(auth AuthParams, systemID int) ([]string, 
 	if response.StatusCode == 200 {
 		resp, err := HandleSuseManagerResponse(response.Body)
 		if err != nil {
-			p.logger.Error(returnCodes.ErrHandlingSuseManagerResponse, zap.Any("response", resp), zap.Any("error", err))
+			log.Error(returnCodes.ErrHandlingSuseManagerResponse, zap.Any("response", resp), zap.Any("error", err))
 			return nil, errors.New(returnCodes.ErrHandlingSuseManagerResponse)
 		}
 		byteArray, _ := json.Marshal(resp)
 		err = json.Unmarshal(byteArray, &result)
 		if err != nil {
-			p.logger.Error(returnCodes.ErrFailedUnMarshalling, zap.Any("error", err))
+			log.Error(returnCodes.ErrFailedUnMarshalling, zap.Any("error", err))
 			return nil, errors.New(returnCodes.ErrFailedUnMarshalling)
 		}
 	} else {
-		p.logger.Error(returnCodes.ErrHTTPSuseManagerResponse, zap.Any("HTTP Statuscode", response.StatusCode), zap.Any("HTTP body", response.Body))
+		log.Error(returnCodes.ErrHTTPSuseManagerResponse, zap.Any("HTTP Statuscode", response.StatusCode))
 		return nil, errors.New(returnCodes.ErrHandlingSuseManagerResponse)
 	}
 	return result, nil
@@ -197,7 +198,7 @@ func (p *Proxy) GetFormulasByServerID(auth AuthParams, systemID int) ([]string, 
 func (p *Proxy) GetFormulasByGroupID(auth AuthParams, groupID int) ([]string, error) {
 	body, err := json.Marshal(map[string]interface{}{"systemGroupId": groupID})
 	if err != nil {
-		p.logger.Error(returnCodes.ErrFailedMarshalling, zap.Any("error", err))
+		log.Error(returnCodes.ErrFailedMarshalling, zap.Any("error", err))
 		return nil, errors.New(returnCodes.ErrFailedMarshalling)
 	}
 	path := "formula/getFormulasByGroupId"
@@ -209,17 +210,17 @@ func (p *Proxy) GetFormulasByGroupID(auth AuthParams, groupID int) ([]string, er
 	if response.StatusCode == 200 {
 		resp, err := HandleSuseManagerResponse(response.Body)
 		if err != nil {
-			p.logger.Error(returnCodes.ErrHandlingSuseManagerResponse, zap.Any("response", resp), zap.Any("error", err))
+			log.Error(returnCodes.ErrHandlingSuseManagerResponse, zap.Any("response", resp), zap.Any("error", err))
 			return nil, errors.New(returnCodes.ErrHandlingSuseManagerResponse)
 		}
 		byteArray, _ := json.Marshal(resp)
 		err = json.Unmarshal(byteArray, &result)
 		if err != nil {
-			p.logger.Error(returnCodes.ErrFailedUnMarshalling, zap.Any("error", err))
+			log.Error(returnCodes.ErrFailedUnMarshalling, zap.Any("error", err))
 			return nil, errors.New(returnCodes.ErrFailedUnMarshalling)
 		}
 	} else {
-		p.logger.Error(returnCodes.ErrHTTPSuseManagerResponse, zap.Any("HTTP Statuscode", response.StatusCode), zap.Any("HTTP body", response.Body))
+		log.Error(returnCodes.ErrHTTPSuseManagerResponse, zap.Any("HTTP Statuscode", response.StatusCode))
 		return nil, errors.New(returnCodes.ErrHandlingSuseManagerResponse)
 	}
 	return result, nil
@@ -234,30 +235,30 @@ func (p *Proxy) GetFormulasByGroupID(auth AuthParams, groupID int) ([]string, er
 func (p *Proxy) FormulaSetFormulasOfGroup(auth AuthParams, systemID int, formulaNames []string) (int, error) {
 	body, err := json.Marshal(map[string]any{"systemGroupId": systemID, "formulas": formulaNames})
 	if err != nil {
-		p.logger.Error(returnCodes.ErrFailedMarshalling, zap.Any("error", err))
+		log.Error(returnCodes.ErrFailedMarshalling, zap.Any("error", err))
 		return 0, errors.New(returnCodes.ErrFailedMarshalling)
 	}
 	path := "formula/setFormulasOfGroup"
 	response, err := p.suse.SuseManagerCall(body, http.MethodPost, auth.Host, path, auth.SessionKey)
 	if err != nil {
-		p.logger.Error("Error message received from suse-manger", zap.Any("error", err))
+		log.Error("Error message received from suse-manger", zap.Any("error", err))
 		return 0, err
 	}
 	var result int
 	if response.StatusCode == 200 {
 		resp, err := HandleSuseManagerResponse(response.Body)
 		if err != nil {
-			p.logger.Error(returnCodes.ErrHandlingSuseManagerResponse, zap.Any("response", resp), zap.Any("error", err))
+			log.Error(returnCodes.ErrHandlingSuseManagerResponse, zap.Any("response", resp), zap.Any("error", err))
 			return 0, errors.New(returnCodes.ErrHandlingSuseManagerResponse)
 		}
 		byteArray, _ := json.Marshal(resp)
 		err = json.Unmarshal(byteArray, &result)
 		if err != nil {
-			p.logger.Error(returnCodes.ErrFailedUnMarshalling, zap.Any("error", err))
+			log.Error(returnCodes.ErrFailedUnMarshalling, zap.Any("error", err))
 			return 0, errors.New(returnCodes.ErrFailedUnMarshalling)
 		}
 	} else {
-		p.logger.Error(returnCodes.ErrHTTPSuseManagerResponse, zap.Any("HTTP Statuscode", response.StatusCode), zap.Any("HTTP body", response.Body))
+		log.Error(returnCodes.ErrHTTPSuseManagerResponse, zap.Any("HTTP Statuscode", response.StatusCode))
 		return 0, errors.New(returnCodes.ErrHandlingSuseManagerResponse)
 	}
 	return result, nil
@@ -272,30 +273,30 @@ func (p *Proxy) FormulaSetFormulasOfGroup(auth AuthParams, systemID int, formula
 func (p *Proxy) FormulaSetFormulasOfSystem(auth AuthParams, systemID int, formulaNames []string) (int, error) {
 	body, err := json.Marshal(map[string]any{"sid": systemID, "formulas": formulaNames})
 	if err != nil {
-		p.logger.Error(returnCodes.ErrFailedMarshalling, zap.Any("error", err))
+		log.Error(returnCodes.ErrFailedMarshalling, zap.Any("error", err))
 		return 0, errors.New(returnCodes.ErrFailedMarshalling)
 	}
 	path := "formula/setFormulasOfServer"
 	response, err := p.suse.SuseManagerCall(body, http.MethodPost, auth.Host, path, auth.SessionKey)
 	if err != nil {
-		p.logger.Error("Error message received from suse-manger", zap.Any("error", err))
+		log.Error("Error message received from suse-manger", zap.Any("error", err))
 		return 0, err
 	}
 	var result int
 	if response.StatusCode == 200 {
 		resp, err := HandleSuseManagerResponse(response.Body)
 		if err != nil {
-			p.logger.Error(returnCodes.ErrHandlingSuseManagerResponse, zap.Any("response", resp), zap.Any("error", err))
+			log.Error(returnCodes.ErrHandlingSuseManagerResponse, zap.Any("response", resp), zap.Any("error", err))
 			return 0, errors.New(returnCodes.ErrHandlingSuseManagerResponse)
 		}
 		byteArray, _ := json.Marshal(resp)
 		err = json.Unmarshal(byteArray, &result)
 		if err != nil {
-			p.logger.Error(returnCodes.ErrFailedUnMarshalling, zap.Any("error", err))
+			log.Error(returnCodes.ErrFailedUnMarshalling, zap.Any("error", err))
 			return 0, errors.New(returnCodes.ErrFailedUnMarshalling)
 		}
 	} else {
-		p.logger.Error(returnCodes.ErrHTTPSuseManagerResponse, zap.Any("HTTP Statuscode", response.StatusCode), zap.Any("HTTP body", response.Body))
+		log.Error(returnCodes.ErrHTTPSuseManagerResponse, zap.Any("HTTP Statuscode", response.StatusCode))
 		return 0, errors.New(returnCodes.ErrHandlingSuseManagerResponse)
 	}
 	return result, nil

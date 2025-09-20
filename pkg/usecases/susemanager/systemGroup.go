@@ -4,6 +4,7 @@ package susemanager
 import (
 	"encoding/json"
 	"fmt"
+	log "mlmtool/pkg/util/logger"
 
 	"go.uber.org/zap"
 
@@ -27,13 +28,13 @@ func (p *Proxy) SystemGroupCreate(auth AuthParams, groupName string, description
 	if response.StatusCode == 200 {
 		resp, err := HandleSuseManagerResponse(response.Body)
 		if err != nil {
-			p.logger.Error("error while handling suse manager response for creating system group", zap.Any("error", err))
+			log.Error("error while handling suse manager response for creating system group", zap.Any("error", err))
 			return nil, fmt.Errorf("error while handling suse manager response for creating system group, err: %s", err)
 		}
 		byteArray, _ := json.Marshal(resp)
 		err = json.Unmarshal(byteArray, &resultSuc)
 		if err != nil {
-			p.logger.Error("unmarshalling error api response", zap.Any("error", err))
+			log.Error("unmarshalling error api response", zap.Any("error", err))
 			return nil, fmt.Errorf("unmarshalling error: %s", err)
 		}
 	} else {
@@ -58,13 +59,13 @@ func (p *Proxy) SystemGroupGetDetails(auth AuthParams, groupName string) (*sumam
 	if response.StatusCode == 200 {
 		resp, err := HandleSuseManagerResponse(response.Body)
 		if err != nil {
-			p.logger.Error("error while handling suse manager response for fetching system group details", zap.Any("error", err))
+			log.Error("error while handling suse manager response for fetching system group details", zap.Any("error", err))
 			return nil, fmt.Errorf("error while handling suse manager response for fetching system group details, err: %s", err)
 		}
 		byteArray, _ := json.Marshal(resp)
 		err = json.Unmarshal(byteArray, &resultSuc)
 		if err != nil {
-			p.logger.Error("unmarshalling error suse-m response", zap.Any("error", err))
+			log.Error("unmarshalling error suse-m response", zap.Any("error", err))
 			return nil, fmt.Errorf("unmarshalling error: %s", err)
 		}
 	} else {
@@ -83,7 +84,7 @@ func (p *Proxy) SystemGroupListSystemsMinimal(auth AuthParams, groupName string)
 	path := "systemgroup/listSystemsMinimal"
 	response, err := p.suse.SuseManagerCall(body, "GET", auth.Host, path, auth.SessionKey)
 	if err != nil {
-		p.logger.Error("error while fetching system group list systemsMinimal", zap.Any("error", err))
+		log.Error("error while fetching system group list systemsMinimal", zap.Any("error", err))
 		return nil, fmt.Errorf("error while fetching system group list systemsMinimal err: %s", err)
 	}
 	var resultSuc []sumamodels.SystemGroupListSystemsMinimal
@@ -95,13 +96,13 @@ func (p *Proxy) SystemGroupListSystemsMinimal(auth AuthParams, groupName string)
 		byteArray, _ := json.Marshal(resp)
 		err = json.Unmarshal(byteArray, &resultSuc)
 		if err != nil {
-			p.logger.Error("unmarshling error", zap.Any("error", err))
+			log.Error("unmarshling error", zap.Any("error", err))
 			return nil, fmt.Errorf("unable to process the received data. err: %s", err)
 		}
 	} else {
 		return nil, fmt.Errorf("calling system group list systemsMinimal Failed. Http StatusCode: %s", fmt.Sprint(response.StatusCode))
 	}
-	p.logger.Debug("Response from api", zap.Any("api", "SystemGroupListSystemsMinimal"), zap.Any("response", resultSuc))
+	log.Debug("Response from api", zap.Any("api", "SystemGroupListSystemsMinimal"), zap.Any("response", resultSuc))
 	return resultSuc, nil
 }
 
@@ -110,7 +111,7 @@ func (p *Proxy) SystemGroupListActiveSystemsInGroup(auth AuthParams, groupName s
 	path := "systemgroup/listActiveSystemsInGroup"
 	response, err := p.suse.SuseManagerCall(body, "GET", auth.Host, path, auth.SessionKey)
 	if err != nil {
-		p.logger.Error("error while fetching system group list of active systems", zap.Any("error", err))
+		log.Error("error while fetching system group list of active systems", zap.Any("error", err))
 		return nil, fmt.Errorf("error while fetching system group list active systems err: %s", err)
 	}
 	var resultSuc []int
@@ -122,12 +123,12 @@ func (p *Proxy) SystemGroupListActiveSystemsInGroup(auth AuthParams, groupName s
 		byteArray, _ := json.Marshal(resp)
 		err = json.Unmarshal(byteArray, &resultSuc)
 		if err != nil {
-			p.logger.Error("unmarshling error", zap.Any("error", err))
+			log.Error("unmarshling error", zap.Any("error", err))
 			return nil, fmt.Errorf("unable to process the received data. err: %s", err)
 		}
 	} else {
 		return nil, fmt.Errorf("calling system group list systemsMinimal Failed. Http StatusCode: %s", fmt.Sprint(response.StatusCode))
 	}
-	p.logger.Debug("Response from api", zap.Any("api", "SystemGroupListSystemsMinimal"), zap.Any("response", resultSuc))
+	log.Debug("Response from api", zap.Any("api", "SystemGroupListSystemsMinimal"), zap.Any("response", resultSuc))
 	return resultSuc, nil
 }

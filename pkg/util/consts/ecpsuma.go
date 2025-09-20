@@ -1,3 +1,3 @@
 package consts
 
-const EcpSumaVersion string = "REPLACE_ECP_SUMA_VERSION"
+const mlmtoolVersion string = "REPLACE_ECP_SUMA_VERSION"

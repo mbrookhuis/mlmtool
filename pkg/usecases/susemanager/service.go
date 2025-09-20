@@ -2,8 +2,6 @@
 package susemanager
 
 import (
-	"go.uber.org/zap"
-
 	sumamodels "mlmtool/pkg/models/susemanager"
 	"mlmtool/pkg/util/rest"
 )
@@ -12,11 +10,11 @@ import (
 
 // ISuseManager - description
 type ISuseManager interface {
-	GetSystemGroupName(negName string) string
-	SetK3sDetails(auth AuthParams, systemgroupName string, k3sconfiginput map[string]interface{}) error
-	ChangeChannels(auth AuthParams, systemID int, targetedVersion string) error
-	GetHost(negName string, sessionKey string) (*AuthParams, error)
-	InstallPackages(auth AuthParams, systemID int, pkgs []string, timeout int) error
+	//GetSystemGroupName(negName string) string
+	//SetK3sDetails(auth AuthParams, systemgroupName string, k3sconfiginput map[string]interface{}) error
+	//ChangeChannels(auth AuthParams, systemID int, targetedVersion string) error
+	//GetHost(negName string, sessionKey string) (*AuthParams, error)
+	//InstallPackages(auth AuthParams, systemID int, pkgs []string, timeout int) error
 	GetAuth(sessionkey string) (*AuthParams, error)
 }
 
@@ -38,7 +36,6 @@ type (
 		cfg               *SumanConfig
 		contentTypeHeader map[string]string
 		suse              ISuseManagerAPI
-		logger            *zap.Logger
 		retrycount        int
 	}
 )
@@ -50,14 +47,13 @@ type (
 // param: logger
 // param: retrycount
 // return:
-func NewProxy(s *SumanConfig, suse ISuseManagerAPI, logger *zap.Logger, retrycount int) IProxy {
+func NewProxy(s *SumanConfig, suse ISuseManagerAPI, retrycount int) IProxy {
 	header := make(map[string]string)
 	header["Content-Type"] = "application/json"
 	return &Proxy{
 		cfg:               s,
 		contentTypeHeader: header,
 		suse:              suse,
-		logger:            logger,
 		retrycount:        retrycount,
 	}
 }
@@ -91,6 +87,8 @@ type IProxy interface {
 	ContentManagementAttachFilter(auth AuthParams, projectLabel string, filterID int) (sumamodels.ContentManagementFilter, error)
 	ContentManagementCreateEnvironment(auth AuthParams, projectLabel string, predecessorLabel string, envlabel string, name string, description string) (sumamodels.ContentManagementEnvironment, error)
 	ContentManagementBuildProject(auth AuthParams, projectLabel string) (int, error)
+	ContentManagementLookupProject(auth AuthParams, project string) (sumamodels.ContentManagementListProjects, error)
+	ContentManagementDetachSource(auth AuthParams, projectLabel string, sourceType string, sourceLabel string) error
 
 	// system
 	SystemGetID(auth AuthParams, systemName string) ([]sumamodels.System, error)

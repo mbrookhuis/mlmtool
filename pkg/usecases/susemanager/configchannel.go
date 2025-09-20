@@ -4,6 +4,7 @@ package susemanager
 import (
 	"encoding/json"
 	"fmt"
+	log "mlmtool/pkg/util/logger"
 
 	"go.uber.org/zap"
 
@@ -15,11 +16,11 @@ import (
 // param: auth
 // return:
 func (p *Proxy) ConfigChannelListGlobals(auth AuthParams) ([]sumamodels.ConfigChannelListGlobals, error) {
-	p.logger.Info("ConfigChannelListGlobals function call started")
+	log.Debug("ConfigChannelListGlobals function call started")
 	path := "configchannel/listGlobals"
 	response, err := p.suse.SuseManagerCall(nil, "GET", auth.Host, path, auth.SessionKey)
 	if err != nil {
-		p.logger.Error("Error message recieved from suse-manger", zap.Any("error", err))
+		log.Error("Error message recieved from suse-manger", zap.Any("error", err))
 		return nil, fmt.Errorf("error while getting list of configuration channels. Error: %s", err)
 	}
 	var result []sumamodels.ConfigChannelListGlobals
@@ -31,7 +32,7 @@ func (p *Proxy) ConfigChannelListGlobals(auth AuthParams) ([]sumamodels.ConfigCh
 		byteArray, _ := json.Marshal(resp)
 		err = json.Unmarshal(byteArray, &result)
 		if err != nil {
-			p.logger.Error("unmarshling error", zap.Any("error", err))
+			log.Error("unmarshling error", zap.Any("error", err))
 			return nil, fmt.Errorf("unable to process the received data. err: %s", err)
 		}
 	} else {

@@ -6,16 +6,14 @@ import (
 	"crypto/tls"
 	"fmt"
 	"io"
+	log "mlmtool/pkg/util/logger"
 	"net/http"
-	"strings"
 	"time"
 
 	"go.uber.org/zap"
 )
 
 const (
-	// INFOBLOX infoblox URL
-	INFOBLOX        = "infoblox01v"
 	statusCodeMin   = 300
 	statusCodeMax   = 500
 	intervalSeconds = 2
@@ -67,17 +65,6 @@ func (r *Helper) HTTPCaller(skipStatusRetry bool, requestBody []byte, method str
 	reqBody := bytes.NewBuffer(requestBody)
 
 	client := &http.Client{}
-
-	// This block is added as Infoblox certificates are not updated
-	// Adding the check to skip the certificate check when accessing Infoblox
-	if strings.Contains(url, INFOBLOX) {
-		client = &http.Client{
-			Transport: &http.Transport{
-				/* #nosec */
-				TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-			},
-		}
-	}
 
 	req, err := http.NewRequest(method, url, reqBody)
 	if err != nil {
@@ -149,7 +136,7 @@ func (h *HTTPHelperStruct) String() string {
 // param: insecure
 // param: header
 // return:
-func HTTPHelper(log *zap.Logger, retrycount int, requsetBody []byte, method string, url string, insecure bool, header ...map[string]string) (*HTTPHelperStruct, error) {
+func HTTPHelper(retrycount int, requsetBody []byte, method string, url string, insecure bool, header ...map[string]string) (*HTTPHelperStruct, error) {
 	reqBody := bytes.NewBuffer(requsetBody)
 
 	client := &http.Client{}
@@ -165,11 +152,11 @@ func HTTPHelper(log *zap.Logger, retrycount int, requsetBody []byte, method stri
 	}
 	var res *http.Response
 	retry := 0
-	log.Info("Connecting to: ", zap.Any("url", url))
+	log.Debug("Connecting to: ", zap.Any("url", url))
 	for ok := true; ok; ok = (err != nil || retry == retrycount) {
 		res, err = client.Do(req)
 		if err != nil {
-			log.Info("Retrying connect to: ", zap.Any("retry count", retry))
+			log.Debug("Retrying connect to: ", zap.Any("retry count", retry))
 			time.Sleep(time.Duration(retry*2) * time.Second)
 			if retry == retrycount {
 				log.Error("Failed connect to: ", zap.Any("url", url))

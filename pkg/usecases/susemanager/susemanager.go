@@ -7,19 +7,18 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	"go.uber.org/zap"
 
 	sumamodels "mlmtool/pkg/models/susemanager"
 	util "mlmtool/pkg/util/contains"
+	"mlmtool/pkg/util/logger"
 	"mlmtool/pkg/util/rest"
 	returnCodes "mlmtool/pkg/util/returnCodes"
 )
 
 // SuseManager - general information
 type SuseManager struct {
-	proxy  IProxy
-	cfg    *SumanConfig
-	logger *zap.Logger
+	proxy IProxy
+	cfg   *SumanConfig
 }
 
 // NewSuseManager - open SUSE Manager
@@ -28,11 +27,10 @@ type SuseManager struct {
 // param: cfg
 // param: logger
 // return:
-func NewSuseManager(proxy IProxy, cfg *SumanConfig, logger *zap.Logger) ISuseManager {
+func NewSuseManager(proxy IProxy, cfg *SumanConfig) ISuseManager {
 	return &SuseManager{
-		proxy:  proxy,
-		cfg:    cfg,
-		logger: logger,
+		proxy: proxy,
+		cfg:   cfg,
 	}
 }
 
@@ -126,7 +124,7 @@ func (s *SuseManager) ChangeChannels(auth AuthParams, systemID int, targetedVers
 	if err != nil {
 		return fmt.Errorf("error while updating the channels")
 	}
-	s.logger.Info("Channel change is completed", zap.Any("systemID", systemID))
+	logger.Info("Channel change is completed for %v", systemID)
 
 	return nil
 }
@@ -138,7 +136,7 @@ func (s *SuseManager) ChangeChannels(auth AuthParams, systemID int, targetedVers
 // param: pkgs
 // param: timeout
 func (s *SuseManager) InstallPackages(auth AuthParams, systemID int, pkgs []string, timeout int) error {
-	s.logger.Debug("Inside Install pkgs function", zap.Any("pkgs", pkgs))
+	logger.Debug("Inside Install pkgs function. pkgs: %v", pkgs)
 	// Getting Installed Pkgs
 	installedPkgs, err := s.proxy.SystemListInstalledPackages(auth, systemID)
 	if err != nil {
@@ -223,81 +221,6 @@ func (s *SuseManager) GetAuth(sessionKey string) (*AuthParams, error) {
 	return &auth, nil
 }
 
-// GetHost - get host
-//
-// param: negName
-// param: sessionKey
-// return:
-func (s *SuseManager) GetHost(negName string, sessionKey string) (*AuthParams, error) {
-
-	auth := AuthParams{
-		SessionKey: sessionKey,
-		Host:       s.cfg.Host,
-	}
-	// List system based on group
-	podMembers, err := s.proxy.SystemGroupListSystemsMinimal(auth, s.GetSystemGroupName(negName))
-	if err != nil {
-		return nil, err
-	}
-
-	// Get slaves session key
-	if podMembers == nil || err != nil {
-		slaves, err := s.proxy.GetSlaves(auth.SessionKey)
-		if err != nil {
-			return nil, err
-		}
-		for _, slave := range slaves {
-			system, err := s.proxy.SystemGetID(auth, slave.Label)
-			if err != nil {
-				s.logger.Error("Error while getting systemID", zap.Any("error", err))
-				return nil, err
-			}
-			resp, err := s.proxy.GetSystemFormulaData(auth, system[0].ID, "uyunihub")
-			if err != nil {
-				s.logger.Error("Error while unmarshaling data from SystemFormula", zap.Any("error", err))
-				return nil, err
-			}
-			var slaveformuladata sumamodels.Uyunihub
-			byteArray, _ := json.Marshal(resp)
-			err = json.Unmarshal(byteArray, &slaveformuladata)
-			if err != nil {
-				s.logger.Error("Error while unmarshaling data from Uyunihub", zap.Any("error", err))
-				return nil, err
-			}
-			reqBody, _ := json.Marshal(map[string]interface{}{
-				"login":    slaveformuladata.Hub.ServerUserName,
-				"password": slaveformuladata.Hub.ServerPassword})
-			slavesessionKey, err := s.proxy.GetSessionKey(reqBody, slave.Label)
-			if err != nil {
-				s.logger.Error("Error while login to suse slave", zap.Any("error", err))
-			}
-			auth = AuthParams{
-				SessionKey: slavesessionKey,
-				Host:       slave.Label,
-			}
-			podMembers, err = s.proxy.SystemGroupListSystemsMinimal(auth, s.GetSystemGroupName(negName))
-			if podMembers != nil {
-				return &auth, nil
-			}
-			if err != nil || podMembers == nil {
-				err := s.proxy.SumanLogout(auth)
-				if err != nil {
-					s.logger.Error("Error while perform logout against SUSE Manager", zap.Any("error", err))
-					return nil, err
-				}
-				continue
-			}
-		}
-	} else {
-		auth := AuthParams{
-			SessionKey: auth.SessionKey,
-			Host:       s.cfg.Host,
-		}
-		return &auth, nil
-	}
-	return nil, nil
-}
-
 // CheckResponseProgress - check response from api call
 //
 // param: auth
@@ -310,17 +233,17 @@ func (p *Proxy) CheckResponseProgress(auth AuthParams, response *rest.HTTPHelper
 	if response.StatusCode == 200 {
 		resp, err := HandleSuseManagerResponse(response.Body)
 		if err != nil {
-			p.logger.Error(fmt.Sprintf("%v error %v", returnCodes.ErrHandlingSuseManagerResponse, err))
+			logger.Error(fmt.Sprintf("%v error %v", returnCodes.ErrHandlingSuseManagerResponse, err))
 			return fmt.Errorf(returnCodes.ErrHandlingSuseManagerResponse)
 		}
 		byteArray, err := json.Marshal(resp)
 		if err != nil {
-			p.logger.Error(fmt.Sprintf("%v error %v", returnCodes.ErrFailedMarshalling, err))
+			logger.Error(fmt.Sprintf("%v error %v", returnCodes.ErrFailedMarshalling, err))
 			return fmt.Errorf(returnCodes.ErrFailedMarshalling)
 		}
 		err = json.Unmarshal(byteArray, &actionID)
 		if err != nil {
-			p.logger.Error(fmt.Sprintf("%v error %v", returnCodes.ErrFailedUnMarshalling, err))
+			logger.Error(fmt.Sprintf("%v error %v", returnCodes.ErrFailedUnMarshalling, err))
 			return fmt.Errorf(returnCodes.ErrFailedUnMarshalling)
 		}
 		_, err = p.CheckProgress(auth, actionID, timeOut, funcName, systemID)
@@ -328,7 +251,7 @@ func (p *Proxy) CheckResponseProgress(auth AuthParams, response *rest.HTTPHelper
 			return err
 		}
 	} else {
-		p.logger.Error(fmt.Sprintf("running %v Failed. Http StatusCode: %v Http Body: %v", funcName, response.StatusCode, response.Body))
+		logger.Error(fmt.Sprintf("running %v Failed. Http StatusCode: %v Http Body: %v", funcName, response.StatusCode, response.Body))
 		return fmt.Errorf(returnCodes.ErrProcessingData)
 	}
 	return nil
