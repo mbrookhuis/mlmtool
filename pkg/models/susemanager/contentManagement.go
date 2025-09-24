@@ -46,12 +46,26 @@ type FilterCriteria struct {
 	Value   string `json:"value"`
 }
 
-// ContentManagementEnvironment ContentManagement Environment output
-type ContentManagementEnvironment struct {
+// ContentManagementEnvironmentCreate ContentManagement Environment output
+type ContentManagementEnvironmentCreate struct {
 	Name                string `json:"name"`
 	ContentProjectLabel string `json:"contentProjectLabel"`
 	ID                  int    `json:"id"`
 	Label               string `json:"label"`
 	Version             int    `json:"version"`
 	Status              string `json:"status"`
+}
+
+// ContentManagementEnvironmentList ContentManagement Environment output
+type ContentManagementEnvironmentList struct {
+	Name                     string     `json:"name"`
+	ContentProjectLabel      string     `json:"contentProjectLabel"`
+	ID                       int        `json:"id"`
+	Label                    string     `json:"label"`
+	Version                  int        `json:"version"`
+	Status                   string     `json:"status"`
+	Description              string     `json:"description"`
+	LastBuildDate            CustomDate `json:"lastBuildDate"`
+	PreviousEnvironmentLabel string     `json:"previousEnvironmentLabel"`
+	NextEnvironmentLabel     string     `json:"nextEnvironmentLabel"`
 }

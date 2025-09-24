@@ -46,6 +46,39 @@ func (p *Proxy) ContentManagementListProjects(auth AuthParams) ([]sumamodels.Con
 	return result, nil
 }
 
+// ContentManagementListEnvironments - list content project environments
+//
+// param: auth
+// return:
+func (p *Proxy) ContentManagementListEnvironments(auth AuthParams, label string) ([]sumamodels.ContentManagementEnvironmentList, error) {
+	log.Debug("contentManagement.listProjectEnvironments function called")
+	path := "contentmanagement/listProjectEnvironments"
+	body, err := json.Marshal(map[string]any{"projectLabel": label})
+	response, err := p.suse.SuseManagerCall(body, http.MethodGet, auth.Host, path, auth.SessionKey)
+	if err != nil {
+		log.Error(returnCodes.ErrHandlingSuseManagerResponse, zap.Any("error", err))
+		return nil, errors.New(returnCodes.ErrHandlingSuseManagerResponse)
+	}
+	var result []sumamodels.ContentManagementEnvironmentList
+	if response.StatusCode == 200 {
+		resp, err := HandleSuseManagerResponse(response.Body)
+		if err != nil {
+			log.Error(returnCodes.ErrHandlingSuseManagerResponse, zap.Any("HTTP Statuscode", response.StatusCode))
+			return nil, errors.New(returnCodes.ErrHandlingSuseManagerResponse)
+		}
+		byteArray, _ := json.Marshal(resp)
+		err = json.Unmarshal(byteArray, &result)
+		if err != nil {
+			log.Error(returnCodes.ErrFailedUnMarshalling, zap.Any("error", err))
+			return nil, errors.New(returnCodes.ErrFailedUnMarshalling)
+		}
+	} else {
+		log.Error(returnCodes.ErrHTTPSuseManagerResponse, zap.Any("HTTP Statuscode", response.StatusCode))
+		return result, errors.New(returnCodes.ErrHTTPSuseManagerResponse)
+	}
+	return result, nil
+}
+
 func (p *Proxy) ContentManagementLookupProject(auth AuthParams, project string) (sumamodels.ContentManagementListProjects, error) {
 	log.Debug("contentManagement.lookupProject function called")
 	var result sumamodels.ContentManagementListProjects
@@ -56,7 +89,7 @@ func (p *Proxy) ContentManagementLookupProject(auth AuthParams, project string) 
 		log.Error(returnCodes.ErrFailedMarshalling, zap.Any("error", err))
 		return result, err
 	}
-	response, err := p.suse.SuseManagerCall(body, http.MethodPost, auth.Host, path, auth.SessionKey)
+	response, err := p.suse.SuseManagerCall(body, http.MethodGet, auth.Host, path, auth.SessionKey)
 	if err != nil {
 		log.Error(returnCodes.ErrHandlingSuseManagerResponse, zap.Any("action", "suseManagerResponse"), zap.Any("error", err))
 		return result, err
@@ -64,6 +97,46 @@ func (p *Proxy) ContentManagementLookupProject(auth AuthParams, project string) 
 	if response.StatusCode == 200 {
 		resp, err := HandleSuseManagerResponse(response.Body)
 		if err != nil {
+			if err.Error() == project {
+				return result, nil
+			}
+			log.Error(returnCodes.ErrHandlingSuseManagerResponse, zap.Any("HTTP Statuscode", response.StatusCode))
+			return result, err
+		}
+		byteArray, _ := json.Marshal(resp)
+		err = json.Unmarshal(byteArray, &result)
+		if err != nil {
+			log.Error(returnCodes.ErrFailedUnMarshalling, zap.Any("error", err))
+			return result, err
+		}
+	} else {
+		log.Error(returnCodes.ErrHTTPSuseManagerResponse, zap.Any("HTTP Statuscode", response.StatusCode))
+		return result, errors.New(returnCodes.ErrHTTPSuseManagerResponse)
+	}
+	return result, nil
+}
+
+func (p *Proxy) ContentManagementLookupEnvironment(auth AuthParams, project string, env string) (sumamodels.ContentManagementEnvironmentList, error) {
+	log.Debug("contentManagement.lookupProject function called")
+	var result sumamodels.ContentManagementEnvironmentList
+
+	path := "contentmanagement/lookupEnvironment"
+	body, err := json.Marshal(map[string]any{"projectLabel": project, "envLabel": env})
+	if err != nil {
+		log.Error(returnCodes.ErrFailedMarshalling, zap.Any("error", err))
+		return result, err
+	}
+	response, err := p.suse.SuseManagerCall(body, http.MethodGet, auth.Host, path, auth.SessionKey)
+	if err != nil {
+		log.Error(returnCodes.ErrHandlingSuseManagerResponse, zap.Any("action", "suseManagerResponse"), zap.Any("error", err))
+		return result, err
+	}
+	if response.StatusCode == 200 {
+		resp, err := HandleSuseManagerResponse(response.Body)
+		if err != nil {
+			if err.Error() == env {
+				return result, nil
+			}
 			log.Error(returnCodes.ErrHandlingSuseManagerResponse, zap.Any("HTTP Statuscode", response.StatusCode))
 			return result, err
 		}
@@ -322,9 +395,9 @@ func (p *Proxy) ContentManagementAttachFilter(auth AuthParams, projectLabel stri
 // param: name
 // param: description
 // return:
-func (p *Proxy) ContentManagementCreateEnvironment(auth AuthParams, projectLabel string, predecessorLabel string, envlabel string, name string, description string) (sumamodels.ContentManagementEnvironment, error) {
+func (p *Proxy) ContentManagementCreateEnvironment(auth AuthParams, projectLabel string, predecessorLabel string, envlabel string, name string, description string) (sumamodels.ContentManagementEnvironmentCreate, error) {
 	log.Debug("contentManagement.createEnvironment function called")
-	var result sumamodels.ContentManagementEnvironment
+	var result sumamodels.ContentManagementEnvironmentCreate
 	path := "contentmanagement/createEnvironment"
 	body, err := json.Marshal(map[string]any{"projectLabel": projectLabel, "predecessorLabel": predecessorLabel, "envLabel": envlabel, "name": name, "description": description})
 	if err != nil {
@@ -365,6 +438,45 @@ func (p *Proxy) ContentManagementBuildProject(auth AuthParams, projectLabel stri
 	var result int
 	path := "contentmanagement/buildProject"
 	body, err := json.Marshal(map[string]any{"projectLabel": projectLabel})
+	if err != nil {
+		log.Error(returnCodes.ErrFailedMarshalling, zap.Any("error", err))
+		return result, errors.New(returnCodes.ErrFailedMarshalling)
+	}
+	response, err := p.suse.SuseManagerCall(body, http.MethodPost, auth.Host, path, auth.SessionKey)
+	if err != nil {
+		log.Error(returnCodes.ErrFailedMarshalling, zap.Any("error", err))
+		return result, errors.New(returnCodes.ErrHandlingSuseManagerResponse)
+	}
+	if response.StatusCode == 200 {
+		resp, err := HandleSuseManagerResponse(response.Body)
+		if err != nil {
+			log.Error(returnCodes.ErrHTTPSuseManagerResponse, zap.Any("error", err))
+			return result, errors.New(returnCodes.ErrHandlingSuseManagerResponse)
+		}
+		byteArray, _ := json.Marshal(resp)
+		err = json.Unmarshal(byteArray, &result)
+		if err != nil {
+			log.Error(returnCodes.ErrFailedUnMarshalling, zap.Any("error", err))
+			return result, errors.New(returnCodes.ErrFailedUnMarshalling)
+		}
+	} else {
+		log.Error(returnCodes.ErrHTTPSuseManagerResponse, zap.Any("HTTP Statuscode", response.StatusCode))
+		return result, errors.New(returnCodes.ErrHTTPSuseManagerResponse)
+	}
+	return result, nil
+}
+
+// ContentManagementPromoteProject - build a project
+//
+// param: auth
+// param: projectLabel
+// param: envLabel
+// return:
+func (p *Proxy) ContentManagementPromoteProject(auth AuthParams, projectLabel string, env string) (int, error) {
+	log.Debug("contentManagement.buildProject function called")
+	var result int
+	path := "contentmanagement/promoteProject"
+	body, err := json.Marshal(map[string]any{"projectLabel": projectLabel, "envLabel": env})
 	if err != nil {
 		log.Error(returnCodes.ErrFailedMarshalling, zap.Any("error", err))
 		return result, errors.New(returnCodes.ErrFailedMarshalling)

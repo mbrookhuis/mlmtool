@@ -70,86 +70,89 @@ type IProxy interface {
 	ActivationKeyRemovePackages(auth AuthParams, keyName string, pckgs []sumamodels.ActivationkeyPackages) (int, error)
 
 	// authentication
+	CheckResponseProgress(auth AuthParams, response *rest.HTTPHelperStruct, timeOut int, systemID int, funcName string) error
 	GetSessionKey(body []byte, host string) (string, error)
 	SumanLogin() (string, error)
 	SumanLogout(auth AuthParams) error
-	CheckResponseProgress(auth AuthParams, response *rest.HTTPHelperStruct, timeOut int, systemID int, funcName string) error
 
 	// configchannel
 	ConfigChannelListGlobals(auth AuthParams) ([]sumamodels.ConfigChannelListGlobals, error)
 
 	// contentmanagement
-	ContentManagementListProjects(auth AuthParams) ([]sumamodels.ContentManagementListProjects, error)
-	ContentManagementCreate(auth AuthParams, projectLabel string, name string, description string) (sumamodels.ContentManagementListProjects, error)
-	ContentManagementAttachSource(auth AuthParams, projectLabel string, sourceType string, sourceLabel string) (sumamodels.ContentManagementSource, error)
-	ContentManagementListFilters(auth AuthParams) ([]sumamodels.ContentManagementFilter, error)
-	ContentManagementCreateFilter(auth AuthParams, name string, rule string, entityType string, criteria sumamodels.FilterCriteria) (sumamodels.ContentManagementFilter, error)
 	ContentManagementAttachFilter(auth AuthParams, projectLabel string, filterID int) (sumamodels.ContentManagementFilter, error)
-	ContentManagementCreateEnvironment(auth AuthParams, projectLabel string, predecessorLabel string, envlabel string, name string, description string) (sumamodels.ContentManagementEnvironment, error)
+	ContentManagementAttachSource(auth AuthParams, projectLabel string, sourceType string, sourceLabel string) (sumamodels.ContentManagementSource, error)
 	ContentManagementBuildProject(auth AuthParams, projectLabel string) (int, error)
-	ContentManagementLookupProject(auth AuthParams, project string) (sumamodels.ContentManagementListProjects, error)
+	ContentManagementCreate(auth AuthParams, projectLabel string, name string, description string) (sumamodels.ContentManagementListProjects, error)
+	ContentManagementCreateEnvironment(auth AuthParams, projectLabel string, predecessorLabel string, envlabel string, name string, description string) (sumamodels.ContentManagementEnvironmentCreate, error)
+	ContentManagementCreateFilter(auth AuthParams, name string, rule string, entityType string, criteria sumamodels.FilterCriteria) (sumamodels.ContentManagementFilter, error)
 	ContentManagementDetachSource(auth AuthParams, projectLabel string, sourceType string, sourceLabel string) error
+	ContentManagementListEnvironments(auth AuthParams, label string) ([]sumamodels.ContentManagementEnvironmentList, error)
+	ContentManagementListFilters(auth AuthParams) ([]sumamodels.ContentManagementFilter, error)
+	ContentManagementListProjects(auth AuthParams) ([]sumamodels.ContentManagementListProjects, error)
+	ContentManagementLookupEnvironment(auth AuthParams, project string, env string) (sumamodels.ContentManagementEnvironmentList, error)
+	ContentManagementLookupProject(auth AuthParams, project string) (sumamodels.ContentManagementListProjects, error)
+	ContentManagementPromoteProject(auth AuthParams, projectLabel string, env string) (int, error)
 
 	// system
-	SystemGetID(auth AuthParams, systemName string) ([]sumamodels.System, error)
 	CheckProgress(auth AuthParams, actionID int, timeout int, action string, systemID int) (int, error)
 	ListCompleteSystem(auth AuthParams, actionID int) ([]interface{}, error)
 	ListInprogressSystem(auth AuthParams, actionID int) ([]interface{}, error)
 	ListLatestInstallablePackages(auth AuthParams, systemID int) ([]sumamodels.InstallablePackage, error)
 	SchedulePackageRefresh(auth AuthParams, systemID int) error
 	ScheduleScriptRun(auth AuthParams, systemID int, timeout int, script string) error
+	SystemGetID(auth AuthParams, systemName string) ([]sumamodels.System, error)
 	SystemGetScriptResult(auth AuthParams, actionID int, resultCompleted int) (string, error)
+	SystemGetSubscribedBaseChannel(auth AuthParams, systemID int) (sumamodels.SubscribedBaseChannel, error)
 	SystemListActiveSystems(auth AuthParams) ([]sumamodels.ActiveSystem, error)
 	SystemListInstalledPackages(auth AuthParams, systemID int) ([]sumamodels.InstalledPackage, error)
 	SystemScheduleApplyHighstate(auth AuthParams, systemID int, timeout int) error
 	SystemScheduleApplyStates(auth AuthParams, systemID int, stateNames []string, timeout int) error
 	SystemScheduleChangeChannels(auth AuthParams, systemID int, basechannel string, childChannel []sumamodels.ChannelSoftwareListChildren) error
-	SystemGetSubscribedBaseChannel(auth AuthParams, systemID int) (sumamodels.SubscribedBaseChannel, error)
 	SystemScheduleReboot(auth AuthParams, systemID int, timeout int) error
 
 	// sync
 	GetSlaves(sessionKey string) ([]sumamodels.Slaves, error)
-	SyncSlaveGetSlaveByName(auth AuthParams, slaveFQDN string) (sumamodels.Slaves, error)
-	SyncSlaveDelete(auth AuthParams, slaveID int) (int, error)
-	SyncSlaveCreate(auth AuthParams, slaveFQDN string, isEnabled bool, allowAllOrgs bool) (sumamodels.Slaves, error)
-	SyncMasterGetMasterByLabel(auth AuthParams, slaveFQDN string) (sumamodels.SlavesIssMaster, error)
-	SyncMasterDelete(auth AuthParams, masterID int) (int, error)
 	SyncMasterCreate(auth AuthParams, masterFQDN string) (sumamodels.SlavesIssMaster, error)
+	SyncMasterDelete(auth AuthParams, masterID int) (int, error)
+	SyncMasterGetMasterByLabel(auth AuthParams, slaveFQDN string) (sumamodels.SlavesIssMaster, error)
 	SyncMasterMakeDefault(auth AuthParams, masterID int) (int, error)
 	SyncMasterSetCaCert(auth AuthParams, masterID int, caCert string) (int, error)
+	SyncSlaveCreate(auth AuthParams, slaveFQDN string, isEnabled bool, allowAllOrgs bool) (sumamodels.Slaves, error)
+	SyncSlaveDelete(auth AuthParams, slaveID int) (int, error)
+	SyncSlaveGetSlaveByName(auth AuthParams, slaveFQDN string) (sumamodels.Slaves, error)
 
 	// Channels
 	ChannelListSoftwareChannels(auth AuthParams) ([]sumamodels.ChannelListSoftwareChannels, error)
-	ChannelSoftwareListChildren(auth AuthParams, label string) ([]sumamodels.ChannelSoftwareListChildren, error)
-	ChannelSoftwareCreateRepo(auth AuthParams, label string, typeRepo string, url string) (sumamodels.ChannelSoftwareCreateRepo, error)
-	ChannelSoftwareCreate(auth AuthParams, label string, name string, summary string, archLabel string, parentLabel string) (int, error)
 	ChannelSoftwareAssociateRepo(auth AuthParams, channelLabel string, repoLabel string) (sumamodels.ChannelSoftwareListChildren, error)
-	ChannelSoftwareSyncRepo(auth AuthParams, channelLabel string) (int, error)
+	ChannelSoftwareCreate(auth AuthParams, label string, name string, summary string, archLabel string, parentLabel string) (int, error)
+	ChannelSoftwareCreateRepo(auth AuthParams, label string, typeRepo string, url string) (sumamodels.ChannelSoftwareCreateRepo, error)
 	ChannelSoftwareIsExisting(auth AuthParams, label string) (bool, error)
+	ChannelSoftwareListChildren(auth AuthParams, label string) ([]sumamodels.ChannelSoftwareListChildren, error)
+	ChannelSoftwareSyncRepo(auth AuthParams, channelLabel string) (int, error)
 	//	SystemGetSubscribedBaseChannel(auth AuthParams, systemID int) (*sumamodels.SubscribedChannel, error)
 
 	// Add func for formula
-	GetFormulasByServerID(auth AuthParams, systemID int) ([]string, error)
+	FormulaSetFormulasOfGroup(auth AuthParams, systemID int, formulaNames []string) (int, error)
+	FormulaSetFormulasOfSystem(auth AuthParams, systemID int, formulaNames []string) (int, error)
 	GetFormulasByGroupID(auth AuthParams, groupID int) ([]string, error)
+	GetFormulasByServerID(auth AuthParams, systemID int) ([]string, error)
 	GetGroupFormulaData(auth AuthParams, groupID int, formulaName string) (interface{}, error)
 	GetSystemFormulaData(auth AuthParams, sid int, formulaname string) (interface{}, error)
 	SetGroupFormulaData(auth AuthParams, groupID int, formulaName string, formulaData interface{}) (int, error)
 	SetSystemFormulaData(auth AuthParams, systemID int, formulaName string, formulaData interface{}) (int, error)
-	FormulaSetFormulasOfGroup(auth AuthParams, systemID int, formulaNames []string) (int, error)
-	FormulaSetFormulasOfSystem(auth AuthParams, systemID int, formulaNames []string) (int, error)
 
 	// SystemGroup
 	SystemGroupCreate(auth AuthParams, groupName string, description string) (*sumamodels.SystemGroupGetDetails, error)
 	SystemGroupGetDetails(auth AuthParams, groupName string) (*sumamodels.SystemGroupGetDetails, error)
-	SystemGroupListSystemsMinimal(auth AuthParams, groupName string) ([]sumamodels.SystemGroupListSystemsMinimal, error)
 	SystemGroupListActiveSystemsInGroup(auth AuthParams, groupName string) ([]int, error)
+	SystemGroupListSystemsMinimal(auth AuthParams, groupName string) ([]sumamodels.SystemGroupListSystemsMinimal, error)
 
 	// KickstartTree
-	KickstartTreeGetDetails(auth AuthParams, distributionName string) (sumamodels.KickstartTreeGetDetails, error)
-	KickstartTreeCreate(auth AuthParams, treeLabel string, basePath string, channelLabel string, installType string) (int, error)
-	KickstartTreeCreateKernelOptions(auth AuthParams, treeLabel string, basePath string, channelLabel string, installType string, kernelOptions string, postKernelOptions string) (int, error)
+	KickstartDeleteProfile(auth AuthParams, profileName string) (int, error)
 	KickstartImportRawFile(auth AuthParams, profileLabel string, virtType string, channelLabel string, dataXML string) (int, error)
 	KickstartListKickstarts(auth AuthParams) ([]sumamodels.KickstartListProfiles, error)
-	KickstartDeleteProfile(auth AuthParams, profileName string) (int, error)
 	KickstartProfileSetVariables(auth AuthParams, profileLabel string, profileVariables interface{}) (int, error)
+	KickstartTreeCreate(auth AuthParams, treeLabel string, basePath string, channelLabel string, installType string) (int, error)
+	KickstartTreeCreateKernelOptions(auth AuthParams, treeLabel string, basePath string, channelLabel string, installType string, kernelOptions string, postKernelOptions string) (int, error)
+	KickstartTreeGetDetails(auth AuthParams, distributionName string) (sumamodels.KickstartTreeGetDetails, error)
 }

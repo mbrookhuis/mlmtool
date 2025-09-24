@@ -88,23 +88,11 @@ func (h *CreateSoftwareProject) validateCreateSoftwareProject(authParm _sumanUse
 // Returns an error if any step in the process fails, including project creation/update steps.
 func (h *CreateSoftwareProject) doCreateSoftwareProject(authParm _sumanUseCase.AuthParams) error {
 	log.Debug("doCreateSoftwareProject started")
-
-	/*
-		Bug fix for bug 1250220
-		project_present, err := h.sumanProxy.ContentManagementLookupProject(authParm, h.input.Project)
-	*/
-	projects, err := h.sumanProxy.ContentManagementListProjects(authParm)
+	project, err := h.sumanProxy.ContentManagementLookupProject(authParm, h.input.Project)
 	if err != nil {
 		return err
 	}
-	project_present := ""
-	for _, project := range projects {
-		if project.Label == h.input.Project {
-			project_present = project.Label
-			break
-		}
-	}
-	if reflect.ValueOf(project_present).IsZero() {
+	if reflect.ValueOf(project).IsZero() {
 		err := h.doSoftwareProject(authParm)
 		if err != nil {
 			return err

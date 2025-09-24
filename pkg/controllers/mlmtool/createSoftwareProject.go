@@ -40,7 +40,7 @@ func init() {
 		"Comma delimited list without spaces of the channels to be added. Can be used together with --basechannel")
 	createSoftwareProjectCmd.Flags().StringVarP(&deleteChannel, "deletechannel", "d", "",
 		"Comma delimited list without spaces of the channels to be removed from the project.")
-	createSoftwareProjectCmd.Flags().StringVarP(&description, "desciption", "m", "",
+	createSoftwareProjectCmd.Flags().StringVarP(&description, "description", "m", "",
 		"Description of the project to be created.")
 	_ = createSoftwareProjectCmd.MarkFlagRequired("SoftwareProject")
 }
