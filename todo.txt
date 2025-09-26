@@ -1,0 +1,19 @@
+cleanup_profiles.py
+create_image_profile.py
+create_repos.py
+cve_report.py
+do_package_update.py
+group_system_update.py
+manage_group.py
+reactivate_proxy_clients.py
+register-system.py
+remove_software_project.py  *
+schedule_image_build.py
+smtools.py
+sync_channel.py
+sync_environment.py
+sync_move_server.py
+system_highstate.py
+system_rereg.py
+system_update.py
+update_bootstrap_repo.py
